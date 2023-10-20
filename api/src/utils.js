@@ -1,19 +1,5 @@
 const { authClient } = require("./authClient");
-
-const refreshToken = async () => {
-  try {
-    if (!authClient.getToken().isAccessTokenValid()) {
-      const {
-        json: { refresh_token, access_token },
-      } = await authClient.refresh();
-
-      process.env.QB_ACCESS_TOKEN = access_token;
-      process.env.QB_REFRESH_TOKEN = refresh_token;
-    }
-  } catch (error) {
-    console.error("Failed to refresh token", error);
-  }
-};
+const pluralize = require("pluralize");
 
 const fetchBills = async (lastInvocationTime) => {
   let query = "SELECT * FROM Bill";
@@ -38,8 +24,6 @@ const billChecker = () => {
 
   return async () => {
     try {
-      // await refreshToken();
-
       const currentTime = new Date().toISOString();
       const response = await fetchBills(lastInvocationTime);
 
@@ -52,9 +36,9 @@ const billChecker = () => {
         newBills[bill.Id] = bill.MetaData.LastUpdatedTime;
 
         if (!previousBills[bill.Id]) {
-          added.push(`Bill ${bill.Id}`);
+          added.push({ ...bill, actionPerformed: "added" });
         } else if (previousBills[bill.Id] !== bill.MetaData.LastUpdatedTime) {
-          modified.push(`Bill ${bill.Id}`);
+          modified.push({ ...bill, actionPerformed: "modified" });
         }
       });
 
@@ -66,26 +50,22 @@ const billChecker = () => {
 
       if (firstInvocation) {
         firstInvocation = false;
-        console.log("RERERERE");
         return { message: "No previous invocation" };
       }
 
       const message = [
         added.length
-          ? `${added.length} addition(s) (${added.join(", ")})`
+          ? `${added.length} ${pluralize("addition", added.length)}`
           : null,
         modified.length
-          ? `${modified.length} change(s) (${modified.join(", ")})`
+          ? `${modified.length} ${pluralize("change", modified.length)}`
           : null,
       ]
         .filter(Boolean)
         .join(" ");
 
       return {
-        bills: {
-          added,
-          modified,
-        },
+        bills: [...added, ...modified],
         message: message || "No changes detected",
       };
     } catch (error) {
@@ -95,4 +75,4 @@ const billChecker = () => {
   };
 };
 
-module.exports = { refreshToken, checkBills: billChecker(), fetchBills };
+module.exports = { checkBills: billChecker(), fetchBills };

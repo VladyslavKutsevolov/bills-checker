@@ -6,9 +6,6 @@ const router = express.Router();
 
 router.get("/check-bills", requireAuth, async (req, res) => {
   const { message, bills } = await checkBills();
-
-  console.log("bills", bills);
-  console.log("msg", message);
   res.json({ message, bills });
 });
 

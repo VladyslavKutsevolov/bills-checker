@@ -28,7 +28,6 @@ describe("GET /check-bills", () => {
 
     const res = await request(app).get("/api/check-bills");
 
-    console.log("res", res.body);
     expect(res.statusCode).toEqual(200);
     expect(res.body).toHaveProperty("message", "No previous invocation");
   });
@@ -60,7 +59,7 @@ describe("GET /check-bills", () => {
 
     const res = await request(app).get("/api/check-bills");
     expect(res.statusCode).toEqual(200);
-    expect(res.body).toHaveProperty("message", "1 addition(s) (Bill 1)");
+    expect(res.body).toHaveProperty("message", "1 addition");
   });
 
   it("should return modified bills", async () => {
@@ -76,7 +75,7 @@ describe("GET /check-bills", () => {
 
     const res = await request(app).get("/api/check-bills");
     expect(res.statusCode).toEqual(200);
-    expect(res.body).toHaveProperty("message", "1 change(s) (Bill 1)");
+    expect(res.body).toHaveProperty("message", "1 change");
   });
 
   it("should handle multiple additions and modifications", async () => {
@@ -93,9 +92,6 @@ describe("GET /check-bills", () => {
 
     const res = await request(app).get("/api/check-bills");
     expect(res.statusCode).toEqual(200);
-    expect(res.body).toHaveProperty(
-      "message",
-      "1 addition(s) (Bill 2) 1 change(s) (Bill 1)"
-    );
+    expect(res.body).toHaveProperty("message", "1 addition 1 change");
   });
 });
