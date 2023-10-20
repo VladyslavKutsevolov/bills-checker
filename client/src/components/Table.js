@@ -11,6 +11,17 @@ const transformData = (data) =>
 
 const headers = ["ID", "Vendor", "Due Date", "Balance", "Action Performed"];
 
+const getBillStyle = (actionPerformed) => {
+  switch (actionPerformed) {
+    case "added":
+      return "bg-green-200 text-green-800";
+    case "modified":
+      return "bg-yellow-100 text-gray-800";
+    default:
+      return "";
+  }
+};
+
 const Table = ({ bills }) => {
   const [tableData, setTableData] = useState([]);
 
@@ -19,17 +30,6 @@ const Table = ({ bills }) => {
       setTableData(transformData(bills));
     }
   }, [bills]);
-
-  const getBillStyle = (actionPerformed) => {
-    switch (actionPerformed) {
-      case "added":
-        return "bg-green-200 text-green-800";
-      case "modified":
-        return "bg-yellow-100 text-gray-800";
-      default:
-        return "";
-    }
-  };
 
   return (
     <div className="relative overflow-x-auto mt-6 rounded-md">
