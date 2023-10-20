@@ -23,7 +23,7 @@ const Table = ({ bills }) => {
   const getBillStyle = (actionPerformed) => {
     switch (actionPerformed) {
       case "added":
-        return "bg-green-100 text-green-800";
+        return "bg-green-200 text-green-800";
       case "modified":
         return "bg-yellow-100 text-gray-800";
       default:
@@ -60,7 +60,7 @@ const Table = ({ bills }) => {
               </tr>
             ))
           ) : (
-            <span className="font-bold">No bills found</span>
+            <p className="font-bold mt-4 w-full">No bills found</p>
           )}
         </tbody>
       </table>
