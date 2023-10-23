@@ -1,31 +1,67 @@
 const { authClient } = require("./authClient");
 const pluralize = require("pluralize");
 
-const fetchBills = async (lastInvocationTime) => {
-  let query = "SELECT * FROM Bill";
-  if (lastInvocationTime) {
-    query += ` WHERE Metadata.LastUpdatedTime >= '${lastInvocationTime}'`;
+const refreshToken = async () => {
+  try {
+    const response = await authClient.refresh();
+
+    if (response) {
+      const { access_token, refresh_token } = response?.getJson();
+
+      if (access_token) {
+        process.env.QB_ACCESS_TOKEN = access_token;
+        process.env.QB_REFRESH_TOKEN = refresh_token;
+      }
+      return response;
+    }
+  } catch (error) {
+    console.error("Failed to refresh token", error);
   }
-  const encodedQuery = encodeURIComponent(query);
-  return await authClient.makeApiCall({
-    url: `https://sandbox-quickbooks.api.intuit.com/v3/company/${process.env.QB_REALM_ID}/query?query=${encodedQuery}`,
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${process.env.QB_ACCESS_TOKEN}`,
-      Accept: "application/json",
-    },
-  });
+};
+
+const fetchBills = async (lastInvocationTime, refreshTokenRetries) => {
+  try {
+    let query = "SELECT * FROM Bill";
+    if (lastInvocationTime) {
+      query += ` WHERE Metadata.LastUpdatedTime >= '${lastInvocationTime}'`;
+    }
+    const encodedQuery = encodeURIComponent(query);
+    return await authClient.makeApiCall({
+      url: `https://sandbox-quickbooks.api.intuit.com/v3/company/${process.env.QB_REALM_ID}/query?query=${encodedQuery}`,
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${process.env.QB_ACCESS_TOKEN}`,
+        Accept: "application/json",
+      },
+    });
+  } catch (error) {
+    console.error(error);
+    if (
+      error?.authResponse.response?.status === 401 &&
+      refreshTokenRetries < 3 &&
+      !authClient.isAccessTokenValid()
+    ) {
+      refreshTokenRetries++;
+      await refreshToken();
+
+      return fetchBills(lastInvocationTime);
+    }
+  }
 };
 
 const billChecker = () => {
   let lastInvocationTime = null;
   let previousBills = {};
   let firstInvocation = true;
+  let refreshTokenRetries = 0;
 
   return async () => {
     try {
       const currentTime = new Date().toISOString();
-      const response = await fetchBills(lastInvocationTime);
+      const response = await fetchBills(
+        lastInvocationTime,
+        refreshTokenRetries
+      );
 
       const bills = response.json.QueryResponse.Bill || [];
       const newBills = {};
@@ -75,4 +111,4 @@ const billChecker = () => {
   };
 };
 
-module.exports = { checkBills: billChecker(), fetchBills };
+module.exports = { checkBills: billChecker() };

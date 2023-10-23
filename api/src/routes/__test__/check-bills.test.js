@@ -5,6 +5,7 @@ const { authClient } = require("../../authClient");
 jest.mock("../../authClient", () => ({
   authClient: {
     makeApiCall: jest.fn(),
+    refresh: jest.fn(),
   },
 }));
 
